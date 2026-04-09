@@ -13,3 +13,9 @@ add_executable(${PROJECT_NAME} src/main.cpp
 target_include_directories(${PROJECT_NAME} PRIVATE include)
 
 
+target_compile_definitions(${PROJECT_NAME} PRIVATE 
+    PROJECT_ROOT_DIR=\"${CMAKE_SOURCE_DIR}\"
+)
+
+
+

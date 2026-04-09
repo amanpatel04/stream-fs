@@ -1,10 +1,24 @@
-
 #include "hard_disk.h"
+
+#include <filesystem>
+#include <fstream>
+#include <iostream>
 
 HardDisk::HardDisk() {
     std::cout << "booting hard disk ...\n";
-    filePointer.open("../resources/virtual_disk.vhd",
-                     std::ios::out | std::ios::in | std::ios::binary);
+
+    std::filesystem::path sourceDir = PROJECT_ROOT_DIR;
+    std::filesystem::path resourcesDir = sourceDir / "resources";
+    std::filesystem::create_directory(resourcesDir);
+    std::filesystem::path file = resourcesDir / "virtual_disk.vhd";
+
+    if (!std::filesystem::exists(file)) {
+        std::ofstream ofs(file);
+        ofs.close();
+    }
+
+    filePointer.open(file, std::ios::out | std::ios::in | std::ios::binary);
+
     if (filePointer.is_open()) {
         char ch = 'a';
         for (int i = 0; i < 1024; i++) {
@@ -13,7 +27,7 @@ HardDisk::HardDisk() {
 
         std::cout << "hard disk is ready\n";
     } else {
-        std::cout << "hard disk boot faliure\n";
+        std::cerr << "hard disk boot faliure\n";
     }
 }
 
