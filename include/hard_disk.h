@@ -2,7 +2,7 @@
 
 #include <fstream>
 
-#include "block.h"
+// #include "block.h"
 
 class HardDisk {
    private:
@@ -13,6 +13,6 @@ class HardDisk {
    public:
     HardDisk();
     ~HardDisk();
-    void read(int headPointer, Block buffer[], int size);
-    void write(int headPointer, Block buffer[], int size);
+    void read(int headPointer, unsigned char buffer[], int size);
+    void write(int headPointer, unsigned char buffer[], int size);
 };

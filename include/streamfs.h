@@ -2,6 +2,7 @@
 #include <array>
 #include <string>
 
+#include "hard_disk.h"
 #include "indexing.h"
 #include "inode.h"
 
@@ -9,6 +10,7 @@ class streamfs {
     std::array<index_node, table_size> fs_tree;
     table lookup;
     std::vector<inode*> inodes;
+    HardDisk hard_disk;
 
     int inode_from_path(std::vector<std::string>& path_token);
     std::vector<std::string> path_tokenizer(std::string path);

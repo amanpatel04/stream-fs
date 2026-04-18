@@ -116,8 +116,9 @@ int streamfs::read(int file_descriptor, unsigned char buffer[], int offset) {
     if (block_index == inodes[file_descriptor]->size / BLOCK_SIZE) {
         read_len = inodes[file_descriptor]->size % BLOCK_SIZE;
     }
+    int head_pointer = block_index * BLOCK_SIZE;
 
-    harddisk.read(block_index, buffer, read_len);
+    hard_disk.read(head_pointer, buffer, read_len);
 
     return read_len;
 }
@@ -130,8 +131,9 @@ int streamfs::write(int file_descriptor, unsigned char buffer[], int offset) {
     if (block_index == inodes[file_descriptor]->size / BLOCK_SIZE) {
         write_len = inodes[file_descriptor]->size % BLOCK_SIZE;
     }
+    int head_pointer = block_index * BLOCK_SIZE;
 
-    harddisk.write(block_index, buffer, read_len);
+    hard_disk.write(head_pointer, buffer, write_len);
 
     return write_len;
 }
