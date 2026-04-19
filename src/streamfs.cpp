@@ -9,17 +9,20 @@
 #include "inode.h"
 
 streamfs::streamfs() {
+    std::cout << "file system begin setup\n";
     inode* node = new inode();
     node->is_directory = true;
     node->name[0] = '/', node->name[1] = '\0';
     node->uid = 0;
     node->parent = -1;
     node->size = 0;
-    node->timestamp = (unsigned long long)ctime(nullptr);
+    node->timestamp = (unsigned long long)time(nullptr);
     std::vector<int> slot = lookup.get_blocks(1);
     node->data = slot[0];
     memset(&fs_tree[slot[0]], 255, sizeof(index_node));
     inodes.push_back(node);
+
+    std::cout << "filesystem setup end\n";
 }
 
 streamfs::~streamfs() {
@@ -30,7 +33,7 @@ streamfs::~streamfs() {
 
 int streamfs::inode_from_path(std::vector<std::string>& path_token) {
     inode* current = inodes[0];
-    int ans = -1;
+    int ans = 0;
     for (std::string& path : path_token) {
         bool flag = false;
         int* arr = (int*)&fs_tree[current->data];
@@ -77,7 +80,7 @@ bool streamfs::create(std::string path, std::string name, int len) {
     node->size = len;
     strcpy(node->name, name.c_str());
     node->parent = inode_pos;
-    node->timestamp = (unsigned long long)ctime(nullptr);
+    node->timestamp = (unsigned long long)time(nullptr);
     node->uid = 0;
 
     int* arr = (int*)&fs_tree[inode_pos];
@@ -116,9 +119,8 @@ int streamfs::read(int file_descriptor, unsigned char buffer[], int offset) {
     if (block_index == inodes[file_descriptor]->size / BLOCK_SIZE) {
         read_len = inodes[file_descriptor]->size % BLOCK_SIZE;
     }
-    int head_pointer = block_index * BLOCK_SIZE;
 
-    hard_disk.read(head_pointer, buffer, read_len);
+    hard_disk.read(block_index, buffer, read_len);
 
     return read_len;
 }
@@ -131,9 +133,23 @@ int streamfs::write(int file_descriptor, unsigned char buffer[], int offset) {
     if (block_index == inodes[file_descriptor]->size / BLOCK_SIZE) {
         write_len = inodes[file_descriptor]->size % BLOCK_SIZE;
     }
-    int head_pointer = block_index * BLOCK_SIZE;
 
-    hard_disk.write(head_pointer, buffer, write_len);
+    hard_disk.write(block_index, buffer, write_len);
 
     return write_len;
+}
+
+int streamfs::ls(std::string path) {
+    std::vector<std::string> path_token = path_tokenizer(path);
+    int index = inode_from_path(path_token);
+    int count = 0;
+
+    int* arr = (int*)&fs_tree[inodes[index]->data];
+    for (int i = 0; i < 3; i++) {
+        if (arr[i] != -1) {
+            count++;
+        }
+    }
+
+    return count;
 }

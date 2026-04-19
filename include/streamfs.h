@@ -23,4 +23,5 @@ class streamfs {
     int open(std::string path);
     int read(int file_descriptor, unsigned char buffer[], int offset);
     int write(int file_descriptor, unsigned char buffer[], int offset);
+    int ls(std::string path);
 };

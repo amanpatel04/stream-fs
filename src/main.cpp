@@ -1,9 +1,16 @@
 #include <iostream>
 
-#include "hard_disk.h"
+#include "streamfs.h"
 
 int main(int argc, char* argv[]) {
-    std::cout << "this is stream-fs project\n";
-    HardDisk hardDisk;
+    std::cout << "stream-fs is started\n";
+    streamfs filesystem;
+
+    std::cout << filesystem.ls("/") << "\n";
+    filesystem.create("/", "foo.txt");
+    // std::cout << filesystem.ls("/") << "\n";
+    // filesystem.create("/", "bar.txt");
+    // std::cout << filesystem.ls("/") << "\n";
+
     return 0;
 }
