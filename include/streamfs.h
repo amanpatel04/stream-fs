@@ -19,9 +19,18 @@ class streamfs {
    public:
     streamfs();
     ~streamfs();
+
+    // file operation
     bool create(std::string path, std::string name, int len = 0);
     int open(std::string path);
     int read(int file_descriptor, unsigned char buffer[], int offset);
     int write(int file_descriptor, unsigned char buffer[], int offset);
-    int ls(std::string path);
+    // bool delete(std::string path, std::string name);
+
+    // directory operation
+    bool create_directory(std::string path, std::string name);
+    // bool delete_directory(std::string path, std::string name);
+
+    // util
+    std::vector<std::string> ls(std::string path);
 };

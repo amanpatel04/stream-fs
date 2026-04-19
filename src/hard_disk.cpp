@@ -1,5 +1,7 @@
 #include "hard_disk.h"
 
+#include <string.h>
+
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -22,10 +24,13 @@ HardDisk::HardDisk() {
     filePointer.open(file, std::ios::out | std::ios::in | std::ios::binary);
 
     if (filePointer.is_open()) {
-        char ch = 'a';
-        for (int i = 0; i < 1024; i++) {
-            filePointer.write(&ch, sizeof(ch));
-        }
+        char* buffer = new char[BLOCK_SIZE];
+        memset(buffer, 'a', BLOCK_SIZE);
+        // for (int i = 0; i < capacity; i++) {
+        //    filePointer.write(buffer, BLOCK_SIZE);
+        // }
+
+        delete[] buffer;
 
         std::cout << "hard disk is ready\n";
     } else {

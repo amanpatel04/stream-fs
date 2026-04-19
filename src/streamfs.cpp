@@ -4,6 +4,7 @@
 #include <cstring>
 #include <ctime>
 #include <iostream>
+#include <vector>
 
 #include "block.h"
 #include "inode.h"
@@ -83,16 +84,17 @@ bool streamfs::create(std::string path, std::string name, int len) {
     node->timestamp = (unsigned long long)time(nullptr);
     node->uid = 0;
 
-    int* arr = (int*)&fs_tree[inode_pos];
+    int* arr = (int*)&fs_tree[inodes[inode_pos]->data];
     for (int i = 0; i < 4; i++) {
-        if (arr[i] == -1) {
-            arr[i] = inodes.size();
-            break;
-        }
         if (i == 3) {
             delete node;
             std::cout << "limit exceeds\n";
             return false;
+        }
+
+        if (arr[i] == -1) {
+            arr[i] = inodes.size();
+            break;
         }
     }
 
@@ -139,17 +141,61 @@ int streamfs::write(int file_descriptor, unsigned char buffer[], int offset) {
     return write_len;
 }
 
-int streamfs::ls(std::string path) {
+bool streamfs::create_directory(std::string path, std::string name) {
+    if (name.length() > 15) return false;
+
+    std::vector<std::string> path_token = path_tokenizer(path);
+    int parent_inode = inode_from_path(path_token);
+
+    if (parent_inode == -1) return false;
+
+    inode* node = new inode();
+    node->is_directory = true;
+    node->size = 0;
+    strcpy(node->name, name.c_str());
+    node->parent = parent_inode;
+    node->timestamp = (unsigned long long)time(nullptr);
+    node->uid = 0;
+
+    int* arr = (int*)&fs_tree[inodes[parent_inode]->data];
+    for (int i = 0; i < 4; i++) {
+        if (i == 3) {
+            delete node;
+            std::cout << "limit exceeds\n";
+            return false;
+        }
+
+        if (arr[i] == -1) {
+            arr[i] = inodes.size();
+            break;
+        }
+    }
+
+    std::vector<int> slot = lookup.get_blocks(1);
+    memset(&fs_tree[slot[0]], 255, 16);
+    node->data = slot[0];
+
+    inodes[parent_inode]->size += 1;
+    inodes.emplace_back(node);
+
+    return true;
+}
+
+std::vector<std::string> streamfs::ls(std::string path) {
     std::vector<std::string> path_token = path_tokenizer(path);
     int index = inode_from_path(path_token);
-    int count = 0;
+    std::vector<std::string> result;
+    if (!inodes[index]->is_directory) {
+        std::cout << "current path is not valid directory\n";
+        return {};
+    }
 
     int* arr = (int*)&fs_tree[inodes[index]->data];
     for (int i = 0; i < 3; i++) {
         if (arr[i] != -1) {
-            count++;
+            result.push_back(inodes[arr[i]]->name);
         }
     }
 
-    return count;
+    return result;
 }
