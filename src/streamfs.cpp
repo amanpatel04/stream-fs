@@ -1,52 +1,31 @@
 
 #include "streamfs.h"
 
-#include <cstring>
-#include <ctime>
+#include <cstdint>
 #include <iostream>
+#include <string>
 #include <vector>
-
-#include "block.h"
-#include "inode.h"
 
 streamfs::streamfs() {
     std::cout << "file system begin setup\n";
-    inode* node = new inode();
-    node->is_directory = true;
-    node->name[0] = '/', node->name[1] = '\0';
-    node->uid = 0;
-    node->parent = -1;
-    node->size = 0;
-    node->timestamp = (unsigned long long)time(nullptr);
-    std::vector<int> slot = lookup.get_blocks(1);
-    node->data = slot[0];
-    memset(&fs_tree[slot[0]], 255, sizeof(index_node));
+
+    Inode* node = new Inode(true, "/", -1);
     inodes.push_back(node);
 
     std::cout << "filesystem setup end\n";
 }
 
 streamfs::~streamfs() {
-    for (inode* node : inodes) {
+    for (Inode* node : inodes) {
         delete node;
     }
 }
 
 int streamfs::inode_from_path(std::vector<std::string>& path_token) {
-    inode* current = inodes[0];
     int ans = 0;
     for (std::string& path : path_token) {
-        bool flag = false;
-        int* arr = (int*)&fs_tree[current->data];
-        for (int i = 0; i < current->size; i++) {
-            if (strcmp(path.c_str(), inodes[arr[i]]->name) == 0) {
-                flag = true;
-                current = inodes[arr[i]];
-                ans = arr[i];
-                break;
-            }
-        }
-        if (!flag) return -1;
+        ans = inodeTree.getInode(ans, path.c_str());
+        if (ans == -1) return -1;
     }
     return ans;
 }
@@ -72,34 +51,19 @@ bool streamfs::create(std::string path, std::string name, int len) {
     if (name.length() > 15) return false;
 
     std::vector<std::string> path_token = path_tokenizer(path);
-    int inode_pos = inode_from_path(path_token);
+    int parentInode = inode_from_path(path_token);
 
-    if (inode_pos == -1) return false;
+    if (parentInode == -1) return false;
 
-    inode* node = new inode();
-    node->is_directory = false;
-    node->size = len;
-    strcpy(node->name, name.c_str());
-    node->parent = inode_pos;
-    node->timestamp = (unsigned long long)time(nullptr);
-    node->uid = 0;
+    int blockRequire = (len + BLOCK_SIZE - 1) / BLOCK_SIZE;
 
-    int* arr = (int*)&fs_tree[inodes[inode_pos]->data];
-    for (int i = 0; i < 4; i++) {
-        if (i == 3) {
-            delete node;
-            std::cout << "limit exceeds\n";
-            return false;
-        }
+    Inode* node = new Inode(false, name, parentInode, len);
+    node->data = avlTree.balloc(blockRequire);
 
-        if (arr[i] == -1) {
-            arr[i] = inodes.size();
-            break;
-        }
-    }
-
-    inodes[inode_pos]->size += 1;
+    inodes[parentInode]->data = inodeTree.insert(inodes[parentInode]->data,
+                                                 inodes.size(), name.c_str());
     inodes.emplace_back(node);
+    inodes[parentInode]->size += 1;
 
     return true;
 }
@@ -110,15 +74,15 @@ int streamfs::open(std::string path) {
 }
 
 int streamfs::get_block(int file_descriptor, int index) {
-    return fs_tree[inodes[file_descriptor]->data].index;
+    return avlTree.getAt(inodes[file_descriptor]->data, index);
 }
 
-int streamfs::read(int file_descriptor, unsigned char buffer[], int offset) {
-    int index = (offset + BLOCK_SIZE - 1) / BLOCK_SIZE;
+int streamfs::read(int file_descriptor, char buffer[], int offset) {
+    int index = offset / BLOCK_SIZE;
     int block_index = get_block(file_descriptor, index);
     int read_len = BLOCK_SIZE;
 
-    if (block_index == inodes[file_descriptor]->size / BLOCK_SIZE) {
+    if (index == inodes[file_descriptor]->size / BLOCK_SIZE) {
         read_len = inodes[file_descriptor]->size % BLOCK_SIZE;
     }
 
@@ -127,8 +91,8 @@ int streamfs::read(int file_descriptor, unsigned char buffer[], int offset) {
     return read_len;
 }
 
-int streamfs::write(int file_descriptor, unsigned char buffer[], int offset) {
-    int index = (offset + BLOCK_SIZE - 1) / BLOCK_SIZE;
+int streamfs::write(int file_descriptor, char buffer[], int offset) {
+    int index = offset / BLOCK_SIZE;
     int block_index = get_block(file_descriptor, index);
     int write_len = BLOCK_SIZE;
 
@@ -145,38 +109,17 @@ bool streamfs::create_directory(std::string path, std::string name) {
     if (name.length() > 15) return false;
 
     std::vector<std::string> path_token = path_tokenizer(path);
-    int parent_inode = inode_from_path(path_token);
+    int parentInode = inode_from_path(path_token);
 
-    if (parent_inode == -1) return false;
+    if (parentInode == -1) return false;
 
-    inode* node = new inode();
-    node->is_directory = true;
-    node->size = 0;
-    strcpy(node->name, name.c_str());
-    node->parent = parent_inode;
-    node->timestamp = (unsigned long long)time(nullptr);
-    node->uid = 0;
+    Inode* node = new Inode(true, name, parentInode);
 
-    int* arr = (int*)&fs_tree[inodes[parent_inode]->data];
-    for (int i = 0; i < 4; i++) {
-        if (i == 3) {
-            delete node;
-            std::cout << "limit exceeds\n";
-            return false;
-        }
+    inodes[parentInode]->data = inodeTree.insert(inodes[parentInode]->data,
+                                                 inodes.size(), name.c_str());
 
-        if (arr[i] == -1) {
-            arr[i] = inodes.size();
-            break;
-        }
-    }
-
-    std::vector<int> slot = lookup.get_blocks(1);
-    memset(&fs_tree[slot[0]], 255, 16);
-    node->data = slot[0];
-
-    inodes[parent_inode]->size += 1;
     inodes.emplace_back(node);
+    inodes[parentInode]->size += 1;
 
     return true;
 }
@@ -184,18 +127,27 @@ bool streamfs::create_directory(std::string path, std::string name) {
 std::vector<std::string> streamfs::ls(std::string path) {
     std::vector<std::string> path_token = path_tokenizer(path);
     int index = inode_from_path(path_token);
-    std::vector<std::string> result;
-    if (!inodes[index]->is_directory) {
-        std::cout << "current path is not valid directory\n";
+
+    if (!inodes[index]->is_directory || index == -1) {
+        std::cout << "target is not directory\n";
         return {};
     }
 
-    int* arr = (int*)&fs_tree[inodes[index]->data];
-    for (int i = 0; i < 3; i++) {
-        if (arr[i] != -1) {
-            result.push_back(inodes[arr[i]]->name);
-        }
-    }
+    std::vector<std::string> result =
+        inodeTree.getInodeNames(inodes[index]->data);
 
     return result;
+}
+
+uint64_t streamfs::getNodeSize(int nodeIndex) {
+    return inodes[nodeIndex]->size;
+}
+
+int streamfs::validPath(std::string path) {
+    std::vector<std::string> path_token = path_tokenizer(path);
+    int index = inode_from_path(path_token);
+    if (index == -1) {
+        return -1;
+    }
+    return inodes[index]->is_directory;
 }

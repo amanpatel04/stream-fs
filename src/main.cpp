@@ -1,44 +1,26 @@
 #include <iostream>
 
-#include "streamfs.h"
-
-void print_vector(std::vector<std::string>& arr) {
-    std::cout << "[";
-    for (std::string& str : arr) {
-        std::cout << str << ", ";
-    }
-    std::cout << "]\n";
-}
+#include "user.h"
 
 int main(int argc, char* argv[]) {
     std::cout << "stream-fs is started\n";
-    streamfs filesystem;
-    std::vector<std::string> temp;
 
-    filesystem.create_directory("/", "dir1");
-    temp = filesystem.ls("/");
-    print_vector(temp);
+    User user;
+    user.mkdir("dir1");
+    user.cd("dir1");
+    bool result = user.uploadFile("source.txt");
+    if (result) {
+        std::cout << "File read\n";
+        user.cd("/");
+        int descp = user.open("source.txt");
+        user.read(descp);
+        user.cd("dir1");
+        descp = user.open("source.txt");
+        user.read(descp);
 
-    filesystem.create("/", "file1.txt");
-    temp = filesystem.ls("/");
-    print_vector(temp);
-
-    filesystem.create_directory("/", "dir2");
-    temp = filesystem.ls("/");
-    print_vector(temp);
-    filesystem.create_directory("/", "dir3");
-
-    filesystem.create("/dir1", "def.txt");
-    temp = filesystem.ls("/dir1");
-    print_vector(temp);
-
-    temp = filesystem.ls("/dir2");
-    print_vector(temp);
-
-    temp = filesystem.ls("/");
-    print_vector(temp);
-    temp = filesystem.ls("/file1.txt");
-    print_vector(temp);
+    } else {
+        std::cout << "Something went wrong\n";
+    }
 
     return 0;
 }

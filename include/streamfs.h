@@ -1,15 +1,17 @@
 #pragma once
-#include <array>
+#include <cstdint>
 #include <string>
 
+#include "avl_tree.h"
 #include "hard_disk.h"
-#include "indexing.h"
 #include "inode.h"
 
+#define BLOCK_SIZE 65536
+
 class streamfs {
-    std::array<index_node, table_size> fs_tree;
-    table lookup;
-    std::vector<inode*> inodes;
+    AvlTree avlTree;
+    InodeTree inodeTree;
+    std::vector<Inode*> inodes;
     HardDisk hard_disk;
 
     int inode_from_path(std::vector<std::string>& path_token);
@@ -23,8 +25,8 @@ class streamfs {
     // file operation
     bool create(std::string path, std::string name, int len = 0);
     int open(std::string path);
-    int read(int file_descriptor, unsigned char buffer[], int offset);
-    int write(int file_descriptor, unsigned char buffer[], int offset);
+    int read(int file_descriptor, char buffer[], int offset);
+    int write(int file_descriptor, char buffer[], int offset);
     // bool delete(std::string path, std::string name);
 
     // directory operation
@@ -33,4 +35,6 @@ class streamfs {
 
     // util
     std::vector<std::string> ls(std::string path);
+    uint64_t getNodeSize(int nodeIndex);
+    int validPath(std::string path);
 };

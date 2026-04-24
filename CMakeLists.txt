@@ -8,8 +8,10 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(SOURCES src/hard_disk.cpp
-            src/indexing.cpp
             src/streamfs.cpp
+            src/avl_tree.cpp
+            src/inode.cpp
+            src/user.cpp
 )
 
 add_library(stream_fs_lib ${SOURCES})

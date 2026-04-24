@@ -10,7 +10,6 @@ FetchContent_MakeAvailable(googletest)
 include(GoogleTest)
 
 add_executable(stream_fs_test
-    test_indexing.cpp
     test_streamfs.cpp
 )
 

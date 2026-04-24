@@ -6,7 +6,7 @@
 #include <fstream>
 #include <iostream>
 
-#include "block.h"
+#define BLOCK_SIZE 65536
 
 HardDisk::HardDisk() {
     std::cout << "booting hard disk ...\n";
@@ -40,18 +40,18 @@ HardDisk::HardDisk() {
 
 HardDisk::~HardDisk() { filePointer.close(); }
 
-void HardDisk::read(int block_index, unsigned char buffer[], int size) {
+void HardDisk::read(int block_index, char buffer[], int size) {
     if (block_index >= capacity) return;
 
     int block_postion = block_index * BLOCK_SIZE;
     filePointer.seekg(block_postion, std::ios::beg);
-    filePointer.read((char*)buffer, size);
+    filePointer.read(buffer, size);
 }
 
-void HardDisk::write(int block_index, unsigned char buffer[], int size) {
+void HardDisk::write(int block_index, char buffer[], int size) {
     if (block_index >= capacity) return;
 
     int block_postion = block_index * BLOCK_SIZE;
     filePointer.seekp(block_postion, std::ios::beg);
-    filePointer.write((char*)buffer, size);
+    filePointer.write(buffer, size);
 }

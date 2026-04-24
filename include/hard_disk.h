@@ -13,6 +13,6 @@ class HardDisk {
    public:
     HardDisk();
     ~HardDisk();
-    void read(int block_index, unsigned char buffer[], int size);
-    void write(int block_index, unsigned char buffer[], int size);
+    void read(int block_index, char buffer[], int size);
+    void write(int block_index, char buffer[], int size);
 };
